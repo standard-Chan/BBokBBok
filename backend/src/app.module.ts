@@ -36,7 +36,9 @@ import { JwtAuthGuard } from './modules/auth/guard/jwt-auth.guard';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/datasources/entities/*.entity{.ts,.js}'],
-        synchronize: false,
+        synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
+        migrations: [__dirname + '/datasources/migration/*{.ts,.js}'],
+        migrationsRun: configService.get('DB_MIGRATIONS_RUN') === 'true',
         dropSchema: false,
         extra: {
           // bigint를 string이 아닌 number로 파싱

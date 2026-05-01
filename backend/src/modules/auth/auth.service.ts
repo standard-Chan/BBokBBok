@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserRepository } from 'src/datasources/repositories/tb-user.repository';
 import { JwtService } from '@nestjs/jwt';
@@ -41,7 +41,7 @@ interface JwtPayload {
 }
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleDestroy {
   private readonly redisClient: Redis;
 
   constructor(
@@ -56,6 +56,14 @@ export class AuthService {
       port: this.configService.get('REDIS_PORT'),
       password: this.configService.get('REDIS_PASSWORD'),
     });
+  }
+
+  async onModuleDestroy() {
+    if (this.redisClient.status === 'end') {
+      return;
+    }
+
+    await this.redisClient.quit();
   }
 
   async loginWithNaver(dto: NaverLoginDto) {

@@ -16,10 +16,11 @@ export const AppDataSource = new DataSource({
   entities: [
     join(__dirname, '..', 'datasources/entities/**/*.entity{.ts,.js}'),
   ],
-  migrations: [join(__dirname, '..', 'datasources/migration/*.ts')],
+  migrations: [join(__dirname, '..', 'datasources/migration/*{.ts,.js}')],
 
-  synchronize: false,
-  logging: true,
+  synchronize: process.env.DB_SYNCHRONIZE === 'true',
+  migrationsRun: process.env.DB_MIGRATIONS_RUN === 'true',
+  logging: process.env.DB_LOGGING === 'true' || process.env.NODE_ENV !== 'test',
 
   extra: {
     parseInt8: true,
