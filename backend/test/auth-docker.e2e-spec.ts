@@ -83,10 +83,9 @@ describe('Quizzes Docker E2E', () => {
       'TRUNCATE TABLE "tb_main_quiz", "tb_quiz_category" RESTART IDENTITY CASCADE',
     );
 
-    await dataSource.getRepository(QuizCategory).save([
-      { name: '백엔드' },
-      { name: '프론트엔드' },
-    ]);
+    await dataSource
+      .getRepository(QuizCategory)
+      .save([{ name: '백엔드' }, { name: '프론트엔드' }]);
   });
 
   afterAll(async () => {
@@ -101,8 +100,8 @@ describe('Quizzes Docker E2E', () => {
       .expect(200);
 
     expect(response.body).toHaveLength(2);
-    expect(response.body.map((category: QuizCategory) => category.name)).toEqual(
-      expect.arrayContaining(['백엔드', '프론트엔드']),
-    );
+    expect(
+      response.body.map((category: QuizCategory) => category.name),
+    ).toEqual(expect.arrayContaining(['백엔드', '프론트엔드']));
   });
 });

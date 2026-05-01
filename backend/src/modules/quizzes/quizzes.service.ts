@@ -89,7 +89,8 @@ export class QuizzesService {
   async getKeywordsByQuiz(mainQuizId: number): Promise<QuizKeyword[]> {
     const keywords =
       await this.quizKeywordRepository.findByMainQuizId(mainQuizId);
-    if (!keywords) throw new NotFoundException(`해당 퀴즈를 찾을 수 없습니다.`);
+    if (!keywords || keywords.length === 0)
+      throw new NotFoundException(`해당 퀴즈를 찾을 수 없습니다.`);
 
     return keywords;
   }
