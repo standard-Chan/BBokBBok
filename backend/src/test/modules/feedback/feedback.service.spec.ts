@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FeedbackService } from './feedback.service';
+import { FeedbackService } from 'src/modules/feedback/feedback.service';
 import { MainQuizRepository } from 'src/datasources/repositories/tb-main-quiz.repository';
 import { SolvedQuizRepository } from 'src/datasources/repositories/tb-solved-quiz.repository';
-import { SpeechesService } from '../speeches/speeches.service';
-import { UsersService } from '../users/users.service';
+import { SpeechesService } from 'src/modules/speeches/speeches.service';
+import { UsersService } from 'src/modules/users/users.service';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { ERROR_MESSAGES } from 'src/common/constants/error-messages';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
