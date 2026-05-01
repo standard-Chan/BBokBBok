@@ -9,7 +9,7 @@ import { MainQuizRepository } from 'src/datasources/repositories/tb-main-quiz.re
 import { SolvedQuizRepository } from 'src/datasources/repositories/tb-solved-quiz.repository';
 import { UserRepository } from 'src/datasources/repositories/tb-user.repository';
 import { ERROR_MESSAGES } from 'src/common/constants/error-messages';
-import { SpeechesService } from '../../../modules/speeches/speeches.service';
+import { SpeechesService } from '../../../src/modules/speeches/speeches.service';
 
 const loggerMock = {
   log: jest.fn(),
