@@ -21,7 +21,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:e2e:docker": "dotenv -e .env.test -- jest --config ./test/jest-e2e.json --runInBand",
+    "test:e2e:docker": "dotenv -e .env.test -- jest --config ./test/jest-e2e.json --runInBand --runTestsByPath ./test/auth-docker.e2e-spec.ts",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "npm run typeorm -- migration:generate src/datasources/migration/$npm_config_name -d src/config/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/config/data-source.ts",

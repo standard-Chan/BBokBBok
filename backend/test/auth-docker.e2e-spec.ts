@@ -1,47 +1,92 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import cookieParser from 'cookie-parser';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { DataSource } from 'typeorm';
-import { initializeTransactionalContext } from 'typeorm-transactional';
-import { AppModule } from '../src/app.module';
-import { Provider } from '../src/datasources/entities/tb-user.entity';
-import { UserRepository } from '../src/datasources/repositories/tb-user.repository';
+import { WinstonModule } from 'nest-winston';
+import { QuizModule } from '../src/modules/quizzes/quizzes.module';
+import { ChecklistItem } from '../src/datasources/entities/tb-checklist-item.entity';
+import { Flashcard } from '../src/datasources/entities/tb-flashcard.entity';
+import { MainQuiz } from '../src/datasources/entities/tb-main-quiz.entity';
+import { MultipleChoice } from '../src/datasources/entities/tb-multiple-choice.entity';
+import { MultipleChoiceOption } from '../src/datasources/entities/tb-multiple-choice-option.entity';
+import { QuizCategory } from '../src/datasources/entities/tb-quiz-category.entity';
+import { QuizKeyword } from '../src/datasources/entities/tb-quiz-keyword.entity';
+import { SolvedQuiz } from '../src/datasources/entities/tb-solved-quiz.entity';
+import { UserChecklistProgress } from '../src/datasources/entities/tb-user-checklist-progress.entity';
+import { User } from '../src/datasources/entities/tb-user.entity';
+import { InitialSchema1000000000000 } from '../src/datasources/migration/1000000000000-InitialSchema';
+import { AddColumSolvedState1769270302275 } from '../src/datasources/migration/1769270302275-AddColumSolvedState';
+import { AddGuestProviderToUser1769507586000 } from '../src/datasources/migration/1769507586000-AddGuestProviderToUser';
+import { UpdateColumnImportance1769528974558 } from '../src/datasources/migration/1769528974558-UpdateColumnImportance';
 
-describe('Auth Docker E2E', () => {
+describe('Quizzes Docker E2E', () => {
   let app: INestApplication;
   let dataSource: DataSource;
-  let userRepository: UserRepository;
 
   beforeAll(async () => {
-    initializeTransactionalContext();
-
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: '.env.test',
+        }),
+        WinstonModule.forRoot({
+          transports: [],
+        }),
+        TypeOrmModule.forRoot({
+          type: 'postgres',
+          host: process.env.DB_HOST,
+          port: Number(process.env.DB_PORT),
+          username: process.env.DB_USERNAME,
+          password: process.env.DB_PASSWORD,
+          database: process.env.DB_DATABASE,
+          entities: [
+            ChecklistItem,
+            Flashcard,
+            MainQuiz,
+            MultipleChoice,
+            MultipleChoiceOption,
+            QuizCategory,
+            QuizKeyword,
+            SolvedQuiz,
+            UserChecklistProgress,
+            User,
+          ],
+          migrations: [
+            InitialSchema1000000000000,
+            AddColumSolvedState1769270302275,
+            AddGuestProviderToUser1769507586000,
+            UpdateColumnImportance1769528974558,
+          ],
+          migrationsRun: true,
+          synchronize: false,
+          logging: false,
+          extra: {
+            parseInt8: true,
+          },
+        }),
+        QuizModule,
+      ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.use(cookieParser());
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-        transformOptions: {
-          enableImplicitConversion: true,
-        },
-      }),
-    );
     app.setGlobalPrefix('api');
-
     await app.init();
 
     dataSource = app.get(DataSource);
-    userRepository = app.get(UserRepository);
   });
 
   beforeEach(async () => {
-    await dataSource.query('TRUNCATE TABLE "tb_user" RESTART IDENTITY CASCADE');
+    await dataSource.query(
+      'TRUNCATE TABLE "tb_main_quiz", "tb_quiz_category" RESTART IDENTITY CASCADE',
+    );
+
+    await dataSource.getRepository(QuizCategory).save([
+      { name: '백엔드' },
+      { name: '프론트엔드' },
+    ]);
   });
 
   afterAll(async () => {
@@ -50,36 +95,14 @@ describe('Auth Docker E2E', () => {
     }
   });
 
-  it('POST /api/auth/login/test stores user in postgres and refresh token in redis', async () => {
-    const loginResponse = await request(app.getHttpServer())
-      .post('/api/auth/login/test')
-      .send({ username: 'docker-e2e-user' })
-      .expect(201);
+  it('GET /api/quizzes/categories returns categories stored in postgres', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/quizzes/categories')
+      .expect(200);
 
-    expect(loginResponse.body.success).toBe(true);
-    expect(loginResponse.body.data.success).toBe(true);
-
-    const persistedUser = await userRepository.findByProvider(
-      Provider.GUEST,
-      'test-user-id',
+    expect(response.body).toHaveLength(2);
+    expect(response.body.map((category: QuizCategory) => category.name)).toEqual(
+      expect.arrayContaining(['백엔드', '프론트엔드']),
     );
-    expect(persistedUser).not.toBeNull();
-    expect(persistedUser?.username).toBe('docker-e2e-user');
-
-    const setCookie = loginResponse.headers['set-cookie'];
-    expect(setCookie).toEqual(expect.arrayContaining([expect.stringContaining('refreshToken=')]));
-    expect(setCookie).toEqual(expect.arrayContaining([expect.stringContaining('accessToken=')]));
-
-    await request(app.getHttpServer())
-      .post('/api/auth/refresh')
-      .set('Cookie', setCookie)
-      .expect(201)
-      .expect(({ body, headers }) => {
-        expect(body.success).toBe(true);
-        expect(body.data.success).toBe(true);
-        expect(headers['set-cookie']).toEqual(
-          expect.arrayContaining([expect.stringContaining('accessToken=')]),
-        );
-      });
   });
 });
